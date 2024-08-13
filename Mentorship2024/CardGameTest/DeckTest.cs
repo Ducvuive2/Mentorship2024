@@ -1,6 +1,6 @@
+using CardGameFunny.Models;
+using CardGameGunny.Models;
 using Newtonsoft.Json.Linq;
-using static CardGame.Class.CardClass;
-using static CardGame.Class.DeckClass;
 
 namespace CardGameTest
 {

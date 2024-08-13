@@ -1,5 +1,5 @@
 using Newtonsoft.Json.Linq;
-using static CardGame.Class.CardClass;
+using CardGameGunny.Models;
 
 namespace CardGameTest
 {
@@ -8,9 +8,9 @@ namespace CardGameTest
         [Fact]
         public void CardInitialization_CheckProperties()
         {
-            var card = new Card(Suit.Hearts, Value.A);
+            var card = new Card(Suit.Hearts, Value.Ace);
             Assert.Equal(Suit.Hearts, card.Suit);
-            Assert.Equal(Value.A, card.Value);
+            Assert.Equal(Value.Ace, card.Value);
         }
     }
 }
