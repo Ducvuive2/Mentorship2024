@@ -36,31 +36,25 @@ namespace DigitalAssetManagement
         }
 
         [Fact]
-        public void TestUserHasStores()
-        {
-            var user = new UserBuilder()
-                .WithName("John")
-                .WithID(1)
-                .AddStore(new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Project1", ParentDriverID = 1, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 2, StoreType = StoreType.Folder, StoreName = "Project2", ParentDriverID = 1, ParentStoreID = null })
-                .Build();
-
-            // Assert
-            var hasStore = user.GetStores().Any();
-            Assert.True(hasStore);
-        }
-
-        [Fact]
         public void TestNumberOfStoresInDrive()
         {
+            // Arrange
             var user = new UserBuilder()
                 .WithName("John")
                 .WithID(1)
-                .AddStore(new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Project1", ParentDriverID = 1, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 2, StoreType = StoreType.Folder, StoreName = "Project2", ParentDriverID = 1, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 3, StoreType = StoreType.Folder, StoreName = "Project1", ParentDriverID = 2, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 4, StoreType = StoreType.Folder, StoreName = "Project2", ParentDriverID = 2, ParentStoreID = null })
                 .Build();
+
+            var googleDriver = new Driver { ID = 1, DriveName = "GoogleDriver" };
+            var oneDriver = new Driver { ID = 2, DriveName = "GoogleDriver" };
+            user.AddDriverToUser(googleDriver);
+            user.AddDriverToUser(oneDriver);
+
+
+            // Act
+            user.AddToDrive(new Store { StoreID = 1, StoreType = StoreType.File, StoreName = "summary1.txt", ParentDriverID = 1, ParentStoreID = null });
+            user.AddToDrive(new Store { StoreID = 2, StoreType = StoreType.File, StoreName = "summary2.txt", ParentDriverID = 1, ParentStoreID = null });
+            user.AddToDrive(new Store { StoreID = 3, StoreType = StoreType.File, StoreName = "summary3.txt", ParentDriverID = 2, ParentStoreID = null });
+            user.AddToDrive(new Store { StoreID = 4, StoreType = StoreType.File, StoreName = "summary4.txt", ParentDriverID = 2, ParentStoreID = null });
 
             // Assert
             var googleDriveStores = user.GetStores().Where(f => f.ParentDriverID == 1).ToList();
@@ -73,18 +67,24 @@ namespace DigitalAssetManagement
         [Fact]
         public void TestInitialFile()
         {
+            // Arrange
             var user = new UserBuilder()
                 .WithName("John")
                 .WithID(1)
-                .AddStore(new Store { StoreID = 1, StoreType = StoreType.File, StoreName = "summary1.txt", ParentDriverID = 1, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 2, StoreType = StoreType.File, StoreName = "summary2.txt", ParentDriverID = 1, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 3, StoreType = StoreType.File, StoreName = "summary3.txt", ParentDriverID = 2, ParentStoreID = null })
-                .AddStore(new Store { StoreID = 4, StoreType = StoreType.File, StoreName = "summary4.txt", ParentDriverID = 2, ParentStoreID = null })
                 .Build();
 
+            var driver = new Driver { ID = 1, DriveName = "GoogleDrive" };
+            user.AddDriverToUser(driver);
+
+            // Act
+            user.AddToDrive(new Store { StoreID = 1, StoreType = StoreType.File, StoreName = "summary1.txt", ParentDriverID = 1, ParentStoreID = null });
+            user.AddToDrive(new Store { StoreID = 2, StoreType = StoreType.File, StoreName = "summary2.txt", ParentDriverID = 1, ParentStoreID = null });
+
+            // Assert
             var numberFileInGoogleDrive = user.GetStores().Where(f => f.ParentDriverID == 1 && f.StoreType == StoreType.File).ToList();
             Assert.Equal(2, numberFileInGoogleDrive.Count);
         }
+
 
         [Fact]
         public void InitialPermission()
@@ -126,18 +126,18 @@ namespace DigitalAssetManagement
             var rootFolder = new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Root1", ParentDriverID = 1, ParentStoreID = null };
             var subFolder = new Store { StoreID = 2, StoreType = StoreType.Folder, StoreName = "SubFolder1", ParentDriverID = 1, ParentStoreID = 1 };
 
-            adminUser.AddToDrive(rootFolder);
-            adminUser.AddToDrive(subFolder);
-
+            // share permission
             var adminPermission = new Permission { ID = 1, DriverID = 1, StoreID = 1, UserID = 1, Roles = Role.Admin };
             adminUser.Permissions.Add(adminPermission); // Admin user gives themselves admin permission
 
-            // Act
-            var contributorPermission = new Permission { ID = 2, DriverID = null, StoreID = 2, UserID = 2, Roles = Role.Contributor };
+            var contributorPermission = new Permission { ID = 2, DriverID = 1, StoreID = 2, UserID = 2, Roles = Role.Contributor };
             adminUser.SharePermissions(contributorPermission, contributorUser);
 
+            adminUser.AddToDrive(rootFolder);
+            adminUser.AddToDrive(subFolder);
+
             // Assert
-            var sharedPermission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, subFolder.StoreID);
+            var sharedPermission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, subFolder);
 
             Assert.NotNull(sharedPermission);
             Assert.Equal(Role.Contributor, sharedPermission?.Roles);
@@ -162,6 +162,9 @@ namespace DigitalAssetManagement
                 .WithID(2)
                 .Build();
 
+            var driver = new Driver { ID = 1, DriveName = "GoogleDrive" };
+            adminUser.AddDriverToUser(driver);
+
             var rootFolder = new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Root1", ParentDriverID = 1, ParentStoreID = null };
             var subFolder = new Store { StoreID = 2, StoreType = StoreType.Folder, StoreName = "SubFolder1", ParentDriverID = 1, ParentStoreID = 1 };
 
@@ -176,7 +179,7 @@ namespace DigitalAssetManagement
             adminUser.SharePermissions(contributorPermission, contributorUser);
 
             // Assert
-            var sharedPermission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, rootFolder.StoreID);
+            var sharedPermission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, rootFolder);
 
             Assert.Null(sharedPermission);
 
@@ -199,25 +202,28 @@ namespace DigitalAssetManagement
                 .WithID(2)
                 .Build();
 
+            var driver = new Driver { ID = 1, DriveName = "GoogleDrive" };
+            adminUser.AddDriverToUser(driver);
+
             var rootFolder = new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Root1", ParentDriverID = 1, ParentStoreID = null };
             var subFolder1 = new Store { StoreID = 2, StoreType = StoreType.Folder, StoreName = "SubFolder1", ParentDriverID = 1, ParentStoreID = 1 };
             var subFolder2 = new Store { StoreID = 3, StoreType = StoreType.Folder, StoreName = "SubFolder2", ParentDriverID = 1, ParentStoreID = 2 };
 
+            // Add folders before assigning permissions
             adminUser.AddToDrive(rootFolder);
             adminUser.AddToDrive(subFolder1);
             adminUser.AddToDrive(subFolder2);
 
             var adminPermission = new Permission { ID = 1, DriverID = 1, StoreID = 1, UserID = 1, Roles = Role.Admin };
-            adminUser.Permissions.Add(adminPermission); // Admin user gives themselves admin permission
+            adminUser.SharePermissions(adminPermission, adminUser); // Admin user gives themselves admin permission
 
-            // Act: Grant Contributor role on Root1
-            var contributorPermission = new Permission { ID = 2, DriverID = null, StoreID = 1, UserID = 2, Roles = Role.Contributor };
+            var contributorPermission = new Permission { ID = 2, DriverID = 1, StoreID = 1, UserID = 2, Roles = Role.Contributor };
             adminUser.SharePermissions(contributorPermission, contributorUser);
 
             // Assert
 
             // Check SubFolder2
-            var subFolder2Permission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, subFolder2.StoreID);
+            var subFolder2Permission = contributorUser.GetPermissionForUserInStored(contributorUser.ID, subFolder2);
             Assert.NotNull(subFolder2Permission);
             Assert.Equal(Role.Contributor, subFolder2Permission?.Roles);
             Assert.True(subFolder2Permission?.CanAdd());
@@ -225,6 +231,64 @@ namespace DigitalAssetManagement
             Assert.True(subFolder2Permission?.CanDelete());
         }
 
+        [Fact]
+        public void ContributorAddingAndModifyingFiles()
+        {
+            // Arrange
+            var contributorUser = new UserBuilder()
+                .WithName("contributor1")
+                .WithID(2)
+                .Build();
+
+            var readerUser = new UserBuilder()
+                .WithName("reader1")
+                .WithID(3)
+                .Build();
+
+            var driver = new Driver { ID = 1, DriveName = "GoogleDrive" };
+            contributorUser.AddDriverToUser(driver);
+
+            var specificationsFolder = new Store { StoreID = 1, StoreType = StoreType.Folder, StoreName = "Specifications", ParentDriverID = 1, ParentStoreID = null };
+
+            var spec1 = new Store { StoreID = 2, StoreType = StoreType.File, StoreName = "Spec1.pdf", ParentDriverID = 1, ParentStoreID = 1 };
+
+            contributorUser.AddToDrive(specificationsFolder);
+            contributorUser.AddToDrive(spec1);
+
+
+            var readerPermission = new Permission { ID = 2, DriverID = 1, StoreID = 1, UserID = 3, Roles = Role.Reader };
+            readerUser.Permissions.Add(readerPermission);
+
+            var readerStore2Permission = new Permission { ID = 3, DriverID = 1, StoreID = 2, UserID = 3, Roles = Role.Reader };
+            readerUser.Permissions.Add(readerStore2Permission);
+
+            readerUser.AddStore(specificationsFolder);
+            readerUser.AddStore(spec1);
+            // Act and Assert for Contributor
+            // 1. Add Spec3.pdf
+            var spec3 = new Store { StoreID = 4, StoreType = StoreType.File, StoreName = "Spec3.pdf", ParentDriverID = 1, ParentStoreID = 1 };
+            contributorUser.AddToDrive(spec3);
+
+            // 2. Rename Spec1.pdf to Spec1_Final.pdf
+            contributorUser.RenameFile(2, "Spec1_Final.pdf");
+
+            // Assert for Contributor
+            var spec3File = contributorUser.GetStores().FirstOrDefault(s => s.StoreID == 4);
+            Assert.NotNull(spec3File);
+            Assert.Equal("Spec3.pdf", spec3File?.StoreName);
+
+            var renamedSpec1 = contributorUser.GetStores().FirstOrDefault(s => s.StoreID == 2);
+            Assert.NotNull(renamedSpec1);
+            Assert.Equal("Spec1_Final.pdf", renamedSpec1?.StoreName);
+
+            // Act and Assert for Reader (should throw exceptions)
+            // Attempt to add Spec4.pdf
+            var spec4 = new Store { StoreID = 5, StoreType = StoreType.File, StoreName = "Spec4.pdf", ParentDriverID = 1, ParentStoreID = 1 };
+            Assert.Throws<UnauthorizedAccessException>(() => readerUser.AddToDrive(spec4));
+
+            // Attempt to rename Spec1_Final.pdf to Spec1_Rev1.pdf
+            Assert.Throws<UnauthorizedAccessException>(() => readerUser.RenameFile(2, "Spec1_Rev1.pdf"));
+        }
     }
 
     public class Store
@@ -280,7 +344,7 @@ namespace DigitalAssetManagement
     public class Driver
     {
         public int ID { get; set; }
-        public int OwnerID { get; set; }
+        public int ? OwnerID { get; set; }
         public string DriveName { get; set; }
     }
 
@@ -294,13 +358,91 @@ namespace DigitalAssetManagement
 
         public void AddToDrive(Store store)
         {
-            Stores.Add(store);
+            if (store == null)
+            {
+                throw new ArgumentNullException(nameof(store), "Store cannot be null.");
+            }
+            var permission = GetPermissionForUserInStored(ID, store);
+            if (permission?.CanAdd() ?? false)
+            {
+                Stores.Add(store);
+                var newStorePermission = new Permission
+                {
+                    ID = store.StoreID, // Assign a unique ID for the permission
+                    DriverID = store.ParentDriverID, // Same driver as the parent
+                    StoreID = store.StoreID, // Permission for the specific store
+                    UserID = ID, // The current user
+                    Roles = permission.Roles // Same role as the parent permission
+                };
+                Permissions.Add(newStorePermission);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("User does not have permission to add files.");
+            }
+        }
+        public void AddDriverToUser(Driver driver)
+        {
+            User user = this;
+            driver.OwnerID = user.ID;
+
+            // Automatically grant Admin role for the user who is now the owner of the driver
+            var permission = new Permission
+            {
+                ID = driver.ID, 
+                DriverID = driver.ID,
+                UserID = user.ID,
+                Roles = Role.Admin 
+            };
+
+            user.Permissions.Add(permission); 
+        }
+        public void AddStore(Store store)
+        {
+            if (!Stores.Contains(store))
+            {
+                Stores.Add(store);
+            }
+        }
+
+        public void RenameFile(int storeId, string newFileName)
+        {
+            var lstStore = GetStores();
+            var store = lstStore.FirstOrDefault(s => s.StoreID == storeId);
+            if (store == null)
+            {
+                throw new NullReferenceException("Store does not exist.");
+            }
+
+            var permission = GetPermissionForUserInStored(ID, store); // Ensure permission is checked
+            if (permission?.CanModify() ?? false)
+            {
+                store.StoreName = newFileName;
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("User does not have permission to rename files.");
+            }
         }
 
         public List<Store> GetStores()
         {
-            return Stores;
+            // Load stores based on the user's permissions
+            var accessibleStores = new List<Store>();
+
+            foreach (var permission in Permissions)
+            {
+                // Retrieve stores based on the StoreID and DriverID from permissions
+                var store = Stores.FirstOrDefault(s => s.StoreID == permission.StoreID);
+                if (store != null && permission.CanView()) // Check if user has view permissions
+                {
+                    accessibleStores.Add(store);
+                }
+            }
+
+            return accessibleStores;
         }
+
 
         public void SharePermissions(Permission permission, User targetUser)
         {
@@ -335,12 +477,19 @@ namespace DigitalAssetManagement
             return Permissions.FirstOrDefault(p => p.UserID == userId && p.DriverID == driverId);
         }
 
-        public Permission GetPermissionForUserInStored(int userId, int? storeID)
+        public Permission GetPermissionForUserInStored(int userId, Store store)
         {
-            Permission permission;
-            permission = Permissions.FirstOrDefault(p => p.UserID == userId && p.StoreID == storeID);
+            var permission = Permissions.FirstOrDefault(p => p.UserID == userId && p.StoreID == store.StoreID);
+
+            if (permission == null)
+            {
+                // Check for permission at the DriverID level (parent level)
+                permission = Permissions.FirstOrDefault(p => p.UserID == userId && p.DriverID == store.ParentDriverID);
+            }
+
             return permission;
         }
+
 
         public string Name { get; set; }
         public int ID { get; set; }
