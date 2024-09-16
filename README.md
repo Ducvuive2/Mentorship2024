@@ -1,3 +1,5 @@
+# Link Deploy: [my-app-name]([https://encore.dev/docs/tutorials/rest-api](https://production-my-app-name-qt8i.encr.app))
+
 # URL Shortener Starter
 
 This is an Encore starter for a URL Shortener. It has two API endpoints and a PostgreSQL database to store the URL IDs 
