@@ -1,4 +1,5 @@
-# Link Deploy: [my-app-name]([https://encore.dev/docs/tutorials/rest-api](https://production-my-app-name-qt8i.encr.app))
+# Link Deploy: 
+Link: [my-app-name]([https://encore.dev/docs/tutorials/rest-api](https://production-my-app-name-qt8i.encr.app))
 
 # URL Shortener Starter
 
