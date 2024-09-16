@@ -1,5 +1,5 @@
 # Link Deploy: 
-Link: [my-app-name](https://production-my-app-name-qt8i.encr.app)
+Link: [my-app-name](https://production-my-app-name-qt8i.encr.app/url)
 
 # URL Shortener Starter
 
